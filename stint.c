@@ -21,7 +21,7 @@
 #include <X11/cursorfont.h>
 #include <Imlib2.h>
 
-void
+static void
 print_pixel(Window root, int x, int y)
 {
 	Imlib_Color color;
