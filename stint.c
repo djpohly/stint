@@ -35,6 +35,7 @@ print_pixel(Window root, int x, int y)
 	imlib_context_set_image(img);
 	imlib_image_query_pixel(0, 0, &color);
 	printf("#%02x%02x%02x\n", color.red, color.green, color.blue);
+	fflush(stdout);
 }
 
 int
