@@ -65,13 +65,25 @@ main(int argc, char *argv[])
 		goto out_free;
 	}
 
-	// Wait for button 1 press
+	// Wait for button press
 	XEvent ev;
 	do {
 		XNextEvent(dpy, &ev);
-	} while (ev.type != ButtonPress || ev.xbutton.button != 1);
+	} while (ev.type != ButtonPress);
 
-	// Print colors until button 1 release
+	// Cancel if a non-Button1 button was pressed
+	if (ev.xbutton.button != 1) {
+		// Wait for release...
+		int b = ev.xbutton.button;
+		do {
+			XNextEvent(dpy, &ev);
+		} while (ev.type != ButtonRelease || ev.xbutton.button != b);
+
+		// ... and cancel
+		goto out_ungrab;
+	}
+
+	// Print colors until Button1 is released
 	int done = 0;
 	while (!done) {
 		XNextEvent(dpy, &ev);
@@ -88,7 +100,8 @@ main(int argc, char *argv[])
 		}
 	}
 
-	// Release the pointer
+out_ungrab:
+	// Release the pointer grab
 	XUngrabPointer(dpy, CurrentTime);
 out_free:
 	// Clean up
