@@ -4,4 +4,4 @@ When run, waits for the user to press the left mouse button.  As long as the
 button is held down, it will continue to print the color under the pointer in
 #RRGGBB hex format.  Exits when the button is released.
 
-Dependencies: Xlib, imlib2
+Dependencies: Xlib

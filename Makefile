@@ -5,7 +5,7 @@ BINARIES = stint
 
 all: $(BINARIES)
 
-stint: LDLIBS=-lX11 -lImlib2
+stint: LDLIBS=-lX11
 
 clean:
 	$(RM) $(BINARIES)
