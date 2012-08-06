@@ -50,9 +50,8 @@ main(int argc, char *argv[])
 	Cursor cross = XCreateFontCursor(dpy, XC_crosshair);
 
 	// Grab pointer clicking and motion events
-	if (XGrabPointer(dpy, root, False, ButtonPressMask | Button1MotionMask |
-			ButtonReleaseMask, GrabModeAsync, GrabModeAsync,
-			root, cross, CurrentTime)) {
+	if (XGrabPointer(dpy, root, False, ButtonPressMask | Button1MotionMask | ButtonReleaseMask,
+				GrabModeAsync, GrabModeAsync, root, cross, CurrentTime)) {
 		fprintf(stderr, "could not grab pointer\n");
 		rv = 1;
 		goto out_free;
@@ -60,6 +59,7 @@ main(int argc, char *argv[])
 
 	// Wait for button press
 	XEvent ev;
+	int done = 0;
 	do {
 		XNextEvent(dpy, &ev);
 	} while (ev.type != ButtonPress);
@@ -73,11 +73,11 @@ main(int argc, char *argv[])
 		} while (ev.type != ButtonRelease || ev.xbutton.button != b);
 
 		// ... and cancel
-		goto out_ungrab;
+		done = 1;
+		rv = 2;
 	}
 
 	// Print colors until Button1 is released
-	int done = 0;
 	while (!done) {
 		XNextEvent(dpy, &ev);
 
@@ -91,7 +91,6 @@ main(int argc, char *argv[])
 		}
 	}
 
-out_ungrab:
 	// Release the pointer grab
 	XUngrabPointer(dpy, CurrentTime);
 out_free:
