@@ -60,7 +60,6 @@ main(int argc, char *argv[])
 
 	// Wait for button press
 	XEvent ev;
-	int done = 0;
 	do {
 		XNextEvent(dpy, &ev);
 	} while (ev.type != ButtonPress);
@@ -74,24 +73,17 @@ main(int argc, char *argv[])
 		} while (ev.type != ButtonRelease || ev.xbutton.button != b);
 
 		// ... and cancel
-		done = 1;
 		rv = 2;
+		goto out_ungrab;
 	}
 
 	// Print colors until Button1 is released
-	while (!done) {
+	while (ev.type != ButtonRelease || ev.xbutton.button != 1) {
+		print_pixel(dpy, root, ev.xbutton.x_root, ev.xbutton.y_root);
 		XNextEvent(dpy, &ev);
-
-		switch (ev.type) {
-			case ButtonRelease:
-				if (ev.xbutton.button != 1)
-					break;
-				done = 1;
-			case MotionNotify:
-				print_pixel(dpy, root, ev.xbutton.x_root, ev.xbutton.y_root);
-		}
 	}
 
+out_ungrab:
 	// Release the pointer grab
 	XUngrabPointer(dpy, CurrentTime);
 out_free:
