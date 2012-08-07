@@ -1,5 +1,6 @@
 prefix = /usr
 destdir =
+CFLAGS = -Wall -Werror -Os
 
 BINARIES = stint
 
