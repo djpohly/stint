@@ -1,3 +1,2 @@
 * Would it be simpler to rewrite using XCB?
 * Grab Esc to cancel?
-* Handle EPIPE gracefully

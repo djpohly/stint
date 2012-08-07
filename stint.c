@@ -17,6 +17,7 @@
  */
 
 #include <stdio.h>
+#include <signal.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
@@ -76,6 +77,10 @@ main(int argc, char *argv[])
 		rv = 2;
 		goto out_ungrab;
 	}
+
+	// Don't die immediately if we get a SIGPIPE
+	struct sigaction sa_ign = { .sa_handler = SIG_IGN };
+	sigaction(SIGPIPE, &sa_ign, NULL);
 
 	// Print colors until Button1 is released
 	while (ev.type != ButtonRelease || ev.xbutton.button != 1) {
