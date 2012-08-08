@@ -22,20 +22,6 @@
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 
-static void
-print_pixel(Display *dpy, Window root, int x, int y)
-{
-	XColor color;
-
-	// Grab a 1x1 screenshot located at (x, y) and find the color
-	color.pixel = XGetPixel(XGetImage(dpy, root, x, y, 1, 1, AllPlanes, ZPixmap), 0, 0);
-	XQueryColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &color);
-
-	// What color is it?
-	printf("%d %d %d\n", color.red >> 8, color.green >> 8, color.blue >> 8);
-	fflush(stdout);
-}
-
 int
 main(int argc, char *argv[])
 {
@@ -84,7 +70,17 @@ main(int argc, char *argv[])
 
 	// Print colors until Button1 is released
 	while (ev.type != ButtonRelease || ev.xbutton.button != 1) {
-		print_pixel(dpy, root, ev.xbutton.x_root, ev.xbutton.y_root);
+		XColor c;
+
+		// Grab a 1x1 screenshot located at (x, y) and find the color
+		c.pixel = XGetPixel(XGetImage(dpy, root, ev.xbutton.x_root, ev.xbutton.y_root,
+					1, 1, AllPlanes, ZPixmap), 0, 0);
+		XQueryColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &c);
+
+		// What color is it?
+		printf("%d %d %d\n", c.red >> 8, c.green >> 8, c.blue >> 8);
+		fflush(stdout);
+
 		XNextEvent(dpy, &ev);
 	}
 
