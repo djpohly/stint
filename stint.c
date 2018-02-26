@@ -18,14 +18,41 @@
 
 #include <stdio.h>
 #include <signal.h>
+#include <string.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
+
+static enum {
+	INTEGER,
+	HEXADECIMAL,
+} output_type = INTEGER;
 
 int
 main(int argc, char *argv[])
 {
 	int rv = 0;
+
+	// Check for arguments
+	if (argc > 2) {
+		fprintf(stderr, "too many arguments\n");
+		return 1;
+	}
+
+	if (argc == 2) {
+		if ( !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help") ) {
+			fprintf(stdout, "usage: stint [OPTION]\n\n");
+			fprintf(stdout, "  -i, --integer     print output colour as integers (default)\n");
+			fprintf(stdout, "  -x, --hexadecimal print output colour as a hex colour code\n");
+			fprintf(stdout, "  -h, --help        print this help message\n");
+			return 0;
+		} else if ( !strcmp(argv[1], "-x") || !strcmp(argv[1], "--hexadecimal") ) {
+			output_type = HEXADECIMAL;
+		} else if ( strcmp(argv[1], "-i") && strcmp(argv[1], "--integer") ) {
+			fprintf(stderr, "unrecognised argument `%s`\n", argv[1]);
+			return 1;
+		}
+	}
 
 	// Get display, root window, and crosshair cursor
 	Display *dpy = XOpenDisplay(NULL);
@@ -78,7 +105,11 @@ main(int argc, char *argv[])
 		XQueryColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &c);
 
 		// What color is it?
-		printf("%d %d %d\n", c.red >> 8, c.green >> 8, c.blue >> 8);
+		if (output_type == INTEGER)
+			printf("%d %d %d\n", c.red >> 8, c.green >> 8, c.blue >> 8);
+		else
+			printf("#%02x%02x%02x\n", c.red >> 8, c.green >> 8, c.blue >> 8);
+
 		fflush(stdout);
 
 		XNextEvent(dpy, &ev);
