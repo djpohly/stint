@@ -22,10 +22,35 @@
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 
+#define HELP_PARAM "--help"
+#define HELP_SHORT_PARAM "-h"
+
+void
+help()
+{
+	printf("Usage: stint [OPTIONS]\n");
+	printf("Simple, suckless-style color grabber for X11\n");
+	printf("\n");
+
+	printf("When run, waits for the user to press the left mouse button.  As long as the\n\
+button is held down, it will continue to print the color under the pointer in\n\
+decimal \"RRR GGG BBB\" format.  Exits when the button is released.\n");
+	printf("\n");
+
+	printf("\t%s, %s\tShow this help\n", HELP_SHORT_PARAM, HELP_PARAM);
+}
+
 int
 main(int argc, char *argv[])
 {
 	int rv = 0;
+
+	//Display help
+	if (argc > 1 && ((strcmp(argv[1], HELP_PARAM) == 0) ||
+			(strcmp(argv[1], HELP_SHORT_PARAM) == 0))) {
+		help();
+		return 0;
+	}
 
 	// Get display, root window, and crosshair cursor
 	Display *dpy = XOpenDisplay(NULL);
