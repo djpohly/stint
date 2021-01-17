@@ -17,15 +17,119 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <errno.h>
 #include <signal.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 
+#define HELP_PARAM "--help"
+#define HELP_SHORT_PARAM "-h"
+#define X_PARAM "-x"
+#define Y_PARAM "-y"
+#define SHOW_LOC_PARAM "--show-location"
+#define SHOW_LOC_SHORT_PARAM "-s"
+
+void
+help()
+{
+	printf("Usage: stint [OPTIONS]\n");
+	printf("Simple, suckless-style color grabber for X11\n");
+	printf("\n");
+
+	printf("When run, waits for the user to press the left mouse button.  As long as the\n\
+button is held down, it will continue to print the color under the pointer in\n\
+decimal \"RRR GGG BBB\" format.  Exits when the button is released.\n");
+	printf("\n");
+
+	printf("\t%s, %s\tShow this help\n", HELP_SHORT_PARAM, HELP_PARAM);
+	printf("\t%s <x>\tUse x location instead of cursor x position (requires %s)\n", X_PARAM, Y_PARAM);
+	printf("\t%s <y>\tUse y location instead of cursor y position (requires %s)\n", Y_PARAM, X_PARAM);
+	printf("\t%s, %s\tDisplay fetched location\n", SHOW_LOC_SHORT_PARAM, SHOW_LOC_PARAM);
+}
+
+void
+print_pixel(Display *dpy, Window root, int x, int y, bool show_loc)
+{
+	XColor c;
+
+	// Grab a 1x1 screenshot located at (x, y) and find the color
+	c.pixel = XGetPixel(XGetImage(dpy, root, x, y, 1, 1, AllPlanes,
+				ZPixmap), 0, 0);
+	XQueryColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &c);
+
+	// Show pixel coordinates if asked
+	if (show_loc) {
+		printf("%d %d\n", x, y);
+	}
+	// What color is it?
+	printf("%d %d %d\n", c.red >> 8, c.green >> 8, c.blue >> 8);
+	fflush(stdout);
+}
+
+int
+get_loc(char *loc_param, int *loc, char *value_param, char *value)
+{
+	char *endptr;
+
+	if (strcmp(loc_param, value_param) == 0) {
+		*loc = strtol(value, &endptr, 0);
+		if (errno != 0) {
+			perror("strtol");
+			return 1;
+		}
+		if (endptr == value) {
+			fprintf(stderr, "no digits were found for %s\n", loc_param);
+			return 1;
+		}
+	}
+	return 0;
+}
+
 int
 main(int argc, char *argv[])
 {
 	int rv = 0;
+	int fixed_pos = false;
+	int show_loc = false;
+	int x = -1;
+	int y = -1;
+	int ret;
+
+	//Display help
+	if (argc > 1 && ((strcmp(argv[1], HELP_PARAM) == 0) ||
+			(strcmp(argv[1], HELP_SHORT_PARAM) == 0))) {
+		help();
+		return 0;
+	}
+
+	//Get arguments
+	for (int i=0; i < argc; i++) {
+		if (i != argc - 1) {
+			ret = get_loc(X_PARAM, &x, argv[i], argv[i+1]);
+			if (ret != 0)
+				return ret;
+			ret = get_loc(Y_PARAM, &y, argv[i], argv[i+1]);
+			if (ret != 0)
+				return ret;
+		}
+		if (strcmp(argv[i], SHOW_LOC_PARAM) == 0 ||
+				strcmp(argv[i], SHOW_LOC_SHORT_PARAM) == 0) {
+			show_loc = true;
+		}
+	}
+
+	// Check arguments are valid
+	if ((x == -1) ^ (y == -1)) {
+		fprintf(stderr, "must supply either both x and y coordinates or none\n");
+		return 3;
+	}
+	if (x != -1 && y != -1) {
+		fixed_pos = true;
+	}
 
 	// Get display, root window, and crosshair cursor
 	Display *dpy = XOpenDisplay(NULL);
@@ -35,6 +139,12 @@ main(int argc, char *argv[])
 	}
 
 	Window root = DefaultRootWindow(dpy);
+
+	if(fixed_pos) {
+		print_pixel(dpy, root, x, y, show_loc);
+		goto out_close;
+	}
+
 	Cursor cross = XCreateFontCursor(dpy, XC_crosshair);
 
 	// Grab pointer clicking and motion events
@@ -70,17 +180,7 @@ main(int argc, char *argv[])
 
 	// Print colors until Button1 is released
 	while (ev.type != ButtonRelease || ev.xbutton.button != 1) {
-		XColor c;
-
-		// Grab a 1x1 screenshot located at (x, y) and find the color
-		c.pixel = XGetPixel(XGetImage(dpy, root, ev.xbutton.x_root, ev.xbutton.y_root,
-					1, 1, AllPlanes, ZPixmap), 0, 0);
-		XQueryColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &c);
-
-		// What color is it?
-		printf("%d %d %d\n", c.red >> 8, c.green >> 8, c.blue >> 8);
-		fflush(stdout);
-
+		print_pixel(dpy, root, ev.xbutton.x_root, ev.xbutton.y_root, show_loc);
 		XNextEvent(dpy, &ev);
 	}
 
@@ -90,7 +190,7 @@ out_ungrab:
 out_free:
 	// Clean up
 	XFreeCursor(dpy, cross);
-
+out_close:
 	XCloseDisplay(dpy);
 	return rv;
 }
