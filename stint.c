@@ -30,6 +30,8 @@
 #define HELP_SHORT_PARAM "-h"
 #define X_PARAM "-x"
 #define Y_PARAM "-y"
+#define SHOW_LOC_PARAM "--show-location"
+#define SHOW_LOC_SHORT_PARAM "-s"
 
 void
 help()
@@ -46,10 +48,11 @@ decimal \"RRR GGG BBB\" format.  Exits when the button is released.\n");
 	printf("\t%s, %s\tShow this help\n", HELP_SHORT_PARAM, HELP_PARAM);
 	printf("\t%s <x>\tUse x location instead of cursor x position (requires %s)\n", X_PARAM, Y_PARAM);
 	printf("\t%s <y>\tUse y location instead of cursor y position (requires %s)\n", Y_PARAM, X_PARAM);
+	printf("\t%s, %s\tDisplay fetched location\n", SHOW_LOC_SHORT_PARAM, SHOW_LOC_PARAM);
 }
 
 void
-print_pixel(Display *dpy, Window root, int x, int y)
+print_pixel(Display *dpy, Window root, int x, int y, bool show_loc)
 {
 	XColor c;
 
@@ -58,6 +61,10 @@ print_pixel(Display *dpy, Window root, int x, int y)
 				ZPixmap), 0, 0);
 	XQueryColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &c);
 
+	// Show pixel coordinates if asked
+	if (show_loc) {
+		printf("%d %d\n", x, y);
+	}
 	// What color is it?
 	printf("%d %d %d\n", c.red >> 8, c.green >> 8, c.blue >> 8);
 	fflush(stdout);
@@ -87,6 +94,7 @@ main(int argc, char *argv[])
 {
 	int rv = 0;
 	int fixed_pos = false;
+	int show_loc = false;
 	int x = -1;
 	int y = -1;
 	int ret;
@@ -107,6 +115,10 @@ main(int argc, char *argv[])
 			ret = get_loc(Y_PARAM, &y, argv[i], argv[i+1]);
 			if (ret != 0)
 				return ret;
+		}
+		if (strcmp(argv[i], SHOW_LOC_PARAM) == 0 ||
+				strcmp(argv[i], SHOW_LOC_SHORT_PARAM) == 0) {
+			show_loc = true;
 		}
 	}
 
@@ -129,7 +141,7 @@ main(int argc, char *argv[])
 	Window root = DefaultRootWindow(dpy);
 
 	if(fixed_pos) {
-		print_pixel(dpy, root, x, y);
+		print_pixel(dpy, root, x, y, show_loc);
 		goto out_close;
 	}
 
@@ -168,7 +180,7 @@ main(int argc, char *argv[])
 
 	// Print colors until Button1 is released
 	while (ev.type != ButtonRelease || ev.xbutton.button != 1) {
-		print_pixel(dpy, root, ev.xbutton.x_root, ev.xbutton.y_root);
+		print_pixel(dpy, root, ev.xbutton.x_root, ev.xbutton.y_root, show_loc);
 		XNextEvent(dpy, &ev);
 	}
 
